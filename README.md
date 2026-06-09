@@ -1,5 +1,4 @@
-# huahua-service
-# Go / Gin 重写指南 — SmartFund后端
+# Go / Gin 重写指南 — SmartFund (花花日记) 后端
 
 > 适用于"对 Go 不熟、对原 Python 业务也不熟"的新人。读完本文你应该可以：
 > 1. 看清当前后端**所有功能点**（防止重构漏掉某个接口或后台任务）。
@@ -62,6 +61,18 @@ backend-go/
 │   │   ├── cors.go                    # CORS 配置
 │   │   ├── gzip.go                    # gin-contrib/gzip
 │   │   └── recovery.go                # 全局 500 兜底（对应 _global_exception_handler）
+│   ├── router/                        # 路由集中注册（按 prefix 分文件）
+│   │   ├── router.go                  # 入口：装配所有子路由
+│   │   ├── auth.go                    # /api/auth/*
+│   │   ├── fund.go                    # /api/* 基金核心
+│   │   ├── market.go                  # /api/market/*
+│   │   ├── user.go                    # /api/sync/*、/api/danmaku/*、/api/import_*
+│   │   ├── admin.go                   # /api/admin/*
+│   │   ├── version.go                 # /api/version
+│   │   ├── agent_request.go           # /api/agent/*
+│   │   ├── jcti.go                    # /api/jcti/*
+│   │   ├── public.go                  # /api/public/*
+│   │   └── health.go                  # /api/health*
 │   ├── handler/                       # HTTP 处理器（对应 routers/*.py）
 │   │   ├── auth.go                    # 来自 routers/auth.py
 │   │   ├── fund.go                    # 来自 routers/fund.py
@@ -107,8 +118,7 @@ backend-go/
 │   │   └── mail/
 │   │       └── mail.go                # SMTP 验证码
 │   ├── task/
-│   │   ├── background.go              # 启动后台循环（对应 tasks/background_refresh.py）
-│   │   └── leader_lock.go             # Redis 分布式领导锁
+│   │   └── background.go              # 启动后台循环（对应 tasks/background_refresh.py）
 │   ├── model/                         # GORM 数据模型（对应 models.py）
 │   │   ├── user.go
 │   │   ├── user_data.go
@@ -121,26 +131,66 @@ backend-go/
 │   │   ├── fund_calibration.go
 │   │   ├── system_notice.go
 │   │   └── system_kv.go
+│   ├── repository/                    # 数据访问层（独立于 service，便于单元测试）
+│   │   ├── repository.go              # 通用接口与 Tx 助手
+│   │   ├── user_repo.go               # users 表所有 CRUD
+│   │   ├── user_data_repo.go          # user_data 同步表
+│   │   ├── fund_nav_repo.go           # fund_navs 历史净值
+│   │   ├── fund_basic_info_repo.go    # fund_basic_info / fund_sectors
+│   │   ├── agent_token_repo.go        # agent_tokens
+│   │   ├── agent_request_repo.go      # agent_requests
+│   │   ├── calibration_repo.go        # fund_calibrations
+│   │   ├── app_version_repo.go
+│   │   ├── system_notice_repo.go
+│   │   └── system_kv_repo.go
 │   ├── schema/                        # 请求/响应 DTO（对应 schemas.py）
 │   │   ├── auth.go
 │   │   ├── fund.go
 │   │   ├── admin.go
 │   │   └── ...
-│   ├── cache/
-│   │   └── cache.go                   # Redis 包装（含 in-memory 降级，对应 cache.py）
 │   ├── db/
 │   │   └── db.go                      # GORM 连接 + 迁移（对应 database.py）
-│   ├── security/
-│   │   ├── ip.go                      # X-Forwarded-For 解析（对应 get_client_ip）
-│   │   ├── ratelimit.go               # 业务级限流 helper（对应 check_rate_limit）
-│   │   ├── etag.go                    # build_sync_etag
-│   │   └── validators.go              # FundCode / BenchmarkCode 校验
-│   └── util/
-│       └── time.go                    # utcnow / round_half_up / 北京时间
+│   └── security/                      # 业务相关的安全工具（含业务命名 / 业务字段）
+│       ├── ratelimit.go               # 业务级限流 helper（rl:auth:* / rl:api:* 键名）
+│       ├── etag.go                    # build_sync_etag（剔除 funds[*] 瞬时字段）
+│       └── validators.go              # FundCode / BenchmarkCode 校验
+├── pkg/                               # 业务无关、可被其他服务复用的通用包
+│   ├── util/                          # 时间 / 数值 / 通用工具（对应 utils.py）
+│   │   ├── time.go                    # utcnow / 北京时间 / get_seconds_until_next_open
+│   │   └── decimal.go                 # round_half_up（基于 shopspring/decimal）
+│   ├── cache/                         # Redis 封装 + 进程内 LRU 降级（对应 cache.py）
+│   │   ├── cache.go                   # Get/Set/Incr/SAdd/SCard/Delete/PushList/GetList...
+│   │   ├── lock.go                    # 分布式锁 acquire_lock / release_lock（Lua 防误删）
+│   │   └── memfallback.go             # LRU 降级（_MEM_MAX_KEYS=2000，主动 TTL 清理）
+│   ├── httpx/                         # 通用 HTTP 增强（对应 akshare 那套 client patch）
+│   │   ├── client.go                  # http.Client 默认超时 / UA / Retry
+│   │   ├── retry.go                   # _run_with_retry 等价（指数退避 + IncompleteRead 处理）
+│   │   └── circuit.go                 # 5 次失败 120s 熔断（_record_akshare_network_fail）
+│   ├── leader/                        # Redis 分布式领导锁（对应 lock:bg_refresh_loop:v1）
+│   │   └── leader.go                  # Acquire/Heartbeat/Release，TTL 180s / 心跳 60s
+│   ├── ratelimit/                     # 算法层：Redis 滑窗 + 本地降级（不绑定 Gin / 业务键名）
+│   │   ├── sliding_window.go          # ZREMRANGEBYSCORE + ZCARD + ZADD pipeline
+│   │   └── local_lru.go               # OrderedDict + sync.Mutex 等价
+│   ├── ipx/                           # 客户端 IP 提取（对应 get_client_ip）
+│   │   └── ip.go                      # 信任 N 个反代，按 X-Forwarded-For 反向取候选
+│   ├── jsonx/                         # LLM 响应健壮解析（对应 AIService 那一坨 _parse_*）
+│   │   ├── partial.go                 # _extract_partial_objects 大括号匹配
+│   │   ├── normalize.go               # _normalize_json_like_text（单引号 / 尾逗号 / BOM）
+│   │   └── parse.go                   # _parse_json_array 顶层入口
+│   ├── imagex/                        # 图片归一化（对应 _normalize_uploaded_image_sync）
+│   │   └── resize.go                  # imaging.Resize + JPEG 质量重编码
+│   ├── llm/                           # 通用 LLM 客户端（无 prompt / 无业务规则）
+│   │   ├── openrouter.go              # /chat/completions
+│   │   ├── gemini.go                  # /v1beta/models/:model:generateContent
+│   │   └── fallback.go                # provider 顺序回退框架
+│   └── tokenbucket/                   # 通用令牌桶限速器（对应 _TwelveDataRateLimiter）
+│       └── bucket.go                  # 按"每分钟 N 个 credits"的版本
 ├── migrations/                        # 手写 SQL（对应 lifespan.py 里的 _migrate_*）
 ├── scripts/                           # 一次性脚本（对应 scripts/*.py）
 └── go.mod
 ```
+
+> **依赖方向：`internal/` 可以 import `pkg/`；`pkg/` 绝不能 import `internal/`**。这条规则一旦破坏，pkg 就失去了通用性，等于在玩文字游戏。每个 pkg 包的 godoc 都该独立、能被任何项目 copy 出去就用。
 
 ---
 
@@ -177,12 +227,157 @@ backend-go/
 3. **静态文件**（行 316-318）：
     - `/static/uploads/*` → `engine.Static("/static/uploads", uploadsDir)`
     - `/static/buy/*` → `engine.Static("/static/buy", buyDir)`
-4. **路由注册**（行 321-331）：按 §5 路由表逐个 `RegisterXxx(rg)`。
+4. **路由注册**（行 321-331）：调用 `router.Register(engine, deps)`，由 `internal/router/router.go` 集中分发到各子路由文件。详细分层说明见 §4a。
 5. **全局异常处理**（行 333-337）：Gin 用 `engine.Use(middleware.Recovery())`，记录堆栈、对外只返 `{"detail": "Internal server error"}`，避免泄露内部信息。
 6. **SPA 兜底**（行 339-377）：
     - `GET /` → 若 `dist/index.html` 存在则返回；否则返回健康信息。
     - `NoRoute` 处理器实现 `_safe_resolve` 防目录穿越：先 `filepath.Clean`，再校验 `strings.HasPrefix(absPath, baseDir)`。
     - **`/api/` 前缀的未知路径必须返回 JSON 404**（防 SPA 误捕获 API 路径，对应行 360-364）。
+
+---
+
+## 4a. 分层架构与依赖方向（重要）
+
+整个 Go 项目采用**严格的单向依赖**，**禁止反向引用**：
+
+```
+router → handler → service → repository → gorm.DB
+            ↘         ↘            ↘
+           schema   pkg/cache    pkg/httpx / pkg/llm / pkg/jsonx / ...
+
+所有层 → pkg/*       （任何 internal 层都可以 import pkg）
+pkg/*  ↛ internal/*  （pkg 包绝对禁止反向引用 internal，否则就不是"通用包"了）
+```
+
+- **router**：只做 `engine.Group(...).METHOD(path, handler)` 的注册映射。**不写业务逻辑**。
+- **handler**：参数绑定（`ShouldBindJSON`）、权限校验、调 service、组装响应。**不直接读写 DB**。
+- **service**：业务规则（α/β 校准、win-rate、估值优先级链）、缓存策略、跨数据源编排。**不直接写 SQL，统一通过 repository**。
+- **repository**：所有 `gorm.DB` 调用集中在此层。**返回 `*model.X` 或 `error`**，绝不返回 `*gorm.DB`。
+- **pkg/***：业务无关的通用包（util / cache / httpx / leader / ratelimit / ipx / jsonx / imagex / llm / tokenbucket）。每个包应当**可以被复制到任何项目里就用**，所以禁止 import `internal/model`、禁止读 `internal/config`，需要配置就通过函数参数或 `Options` 结构注入。
+
+### router 包写法范式
+
+```
+// internal/router/router.go
+func Register(engine *gin.Engine, h *Handlers, mw *Middleware) {
+    api := engine.Group("/api")
+    registerAuth(api, h.Auth, mw)
+    registerFund(api, h.Fund, mw)
+    registerMarket(api, h.Market, mw)
+    // ... 其他子路由
+}
+
+// internal/router/auth.go
+func registerAuth(rg *gin.RouterGroup, h *handler.AuthHandler, mw *Middleware) {
+    g := rg.Group("/auth")
+    g.POST("/send-code",        h.SendEmailCode)
+    g.POST("/register",         h.Register)
+    g.POST("/token",            h.Login)
+    g.POST("/login-by-email",   h.LoginByEmail)
+    g.POST("/logout",           h.Logout)
+    // 需鉴权的路径单独建 subgroup
+    auth := g.Group("", mw.AuthRequired())
+    auth.GET("/me",                  h.Me)
+    auth.GET("/invite-info",         h.GetInviteInfo)
+    auth.POST("/change-password",    h.ChangePassword)
+    auth.POST("/bind-email",         h.BindEmail)
+    auth.PUT("/profile",             h.UpdateProfile)
+    auth.POST("/upload_avatar",      h.UploadAvatar)
+    auth.POST("/claim_admin",        h.ClaimAdmin)
+    auth.POST("/agent-token",        h.CreateAgentToken)
+    auth.GET("/agent-tokens",        h.ListAgentTokens)
+    auth.DELETE("/agent-token/:id",  h.DeleteAgentToken)
+}
+```
+
+**好处**：
+- 新人查"所有 endpoint 在哪"只需翻 `internal/router/` 一个目录。
+- 中间件挂载（哪些路径要 `AuthRequired`、哪些要 `AdminRequired`）一目了然，不会跟 Python `Depends` 那样散在 handler 签名里。
+- 想加 `/api/v2/*` 路径前缀时改一处即可。
+
+### repository 包写法范式
+
+每个 repository 是一个**接口 + 实现**，便于在 service 测试时用 mock 替换：
+
+```
+// internal/repository/user_repo.go
+type UserRepository interface {
+    GetByID(ctx context.Context, id int64) (*model.User, error)
+    GetByUsername(ctx context.Context, username string) (*model.User, error)
+    GetByUID(ctx context.Context, uid string) (*model.User, error)
+    GetByEmail(ctx context.Context, email string) (*model.User, error)
+    Create(ctx context.Context, u *model.User) error
+    Update(ctx context.Context, u *model.User) error
+    CountInvitedBy(ctx context.Context, inviterID int64) (int64, error)
+    LockByIDForUpdate(ctx context.Context, tx *gorm.DB, id int64) (*model.User, error)
+    // 管理员侧
+    Search(ctx context.Context, q string, page, pageSize int) ([]model.User, int64, error)
+    CountActiveVIP(ctx context.Context, now time.Time) (int64, error)
+    CountActivePro(ctx context.Context, now time.Time) (int64, error)
+    PaginateAll(ctx context.Context, offset, limit int) ([]model.User, error)
+}
+
+type userRepo struct{ db *gorm.DB }
+
+func NewUserRepository(db *gorm.DB) UserRepository { return &userRepo{db: db} }
+
+func (r *userRepo) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+    var u model.User
+    err := r.db.WithContext(ctx).Where("username = ?", username).First(&u).Error
+    if errors.Is(err, gorm.ErrRecordNotFound) {
+        return nil, nil  // 业务上"不存在"用 nil + nil，不当错误抛
+    }
+    return &u, err
+}
+```
+
+**事务规则**（这是 Repository 层最容易出错的地方）：
+- 简单单表操作：service 直接调 `repo.Xxx(ctx, ...)`。
+- 跨表事务（如注册时同时改 `users` + 给邀请人发奖励，对应 `routers/auth.py:347-407`）：
+  ```
+  // service 层
+  err := s.db.Transaction(func(tx *gorm.DB) error {
+      newUser, err := s.userRepo.CreateTx(ctx, tx, &model.User{...})
+      if err != nil { return err }
+      inviter, err := s.userRepo.LockByIDForUpdateTx(ctx, tx, inviterID)  // SELECT FOR UPDATE
+      if err != nil { return err }
+      // 在锁保护下重新统计 reward count
+      count, err := s.userRepo.CountInvitedByTx(ctx, tx, inviter.ID)
+      if err != nil { return err }
+      if count < MaxInviteRewardTimes {
+          inviter.VIPExpiresAt = extendVIP(inviter.VIPExpiresAt, InviteRewardDays)
+          if err := s.userRepo.UpdateTx(ctx, tx, inviter); err != nil { return err }
+      }
+      return nil
+  })
+  ```
+- 每个 repository 方法都应该提供 `XxxTx(ctx, tx, ...)` 版本接收外部 tx，或者用变体接口（`type UserTxRepository`）。推荐**所有方法都通过一个 internal helper 统一 db/tx 选择**：
+  ```
+  func (r *userRepo) txOrDB(tx *gorm.DB) *gorm.DB {
+      if tx != nil { return tx }
+      return r.db
+  }
+  ```
+
+### handler / service / repository 三层职责对照表
+
+以"注册"为例：
+
+| 层 | 文件 | 职责 | 不该做 |
+|---|---|---|---|
+| router | `router/auth.go` | `g.POST("/register", h.Register)` 一行 | 任何业务 |
+| handler | `handler/auth.go: Register` | 1) `ShouldBindJSON(&req)`；2) IP 限流；3) `MailService.Verify`；4) 调 `AuthService.Register(ctx, req)`；5) 转 200/4xx 响应 | 直接查 DB |
+| service | `service/auth/auth_service.go: Register` | 邀请码逻辑、邀请人锁、reward 计算、bcrypt 哈希、事务编排 | 写 SQL、绑参数 |
+| repository | `repository/user_repo.go` | 单表 CRUD + `SELECT FOR UPDATE` | 调 cache、限流、bcrypt |
+
+### 与 Python 行号的对应方式
+
+虽然加了 repository 层，**搬代码的对应关系仍然清晰**：
+- Python `db.query(User).filter(User.username == username).first()` → Go `userRepo.GetByUsername(ctx, username)`
+- Python `db.add(new_user); db.commit()` → Go `userRepo.Create(ctx, newUser)`
+- Python `.with_for_update()` → Go `userRepo.LockByIDForUpdateTx(ctx, tx, id)`
+
+第一次搬时直接把 Python 的 DB 调用**整段转成 repository 方法**即可；service 层基本是把 Python 函数里"非 DB 部分"原样保留。
 
 ---
 
@@ -224,7 +419,10 @@ backend-go/
 
 ## 5. HTTP 路由总表（功能点 → Python 来源 → Go 落位）
 
-> 这是**主清单**，不要漏掉任何一行。每个 endpoint 在 Go 里都对应 `handler/<file>.go` 中的一个函数；service 层职责见 §6。
+> 这是**主清单**，不要漏掉任何一行。每个 endpoint 对应三处 Go 文件：
+> - **router**：`internal/router/<file>.go` 中的一行 `g.METHOD(path, h.Xxx)` 注册
+> - **handler**：`internal/handler/<file>.go` 中的处理函数（参数绑定、调 service、组装响应）
+> - **service / repository**：`internal/service/...` 业务逻辑 + `internal/repository/...` 数据访问
 
 ### 5.1 认证 `/api/auth/*` → `handler/auth.go`
 **Python 对应**：`routers/auth.py`（817 行）
@@ -431,7 +629,7 @@ backend-go/
 | 持仓 contribution `_build_breakdown` | 702-763 | `buildBreakdown(...)` |
 | Twelve Data quote `_fetch_twelve_quote` | 354-430 | `fetchTwelveQuote(...)` |
 | Tencent 实时 `_fetch_tencent_us_quote` / `_fetch_tencent_realtime_change` | 432-473, 650-693 | `fetchTencentQuote(...)` |
-| 美股 session/holiday `_market_phase`/`_detect_holiday`/`_us_settle_grace` | 188-303 | `internal/util/market.go` |
+| 美股 session/holiday `_market_phase`/`_detect_holiday`/`_us_settle_grace` | 188-303 | `internal/service/night/market_phase.go`（业务相关，含交易日历查询） |
 | 外汇 (USD/HKD) `_fetch_fx_changes` | 575-648 | `fetchFXChanges(...)` |
 | 最新净值 `_latest_nav_or_fetch_history` | 239-262 | `latestNAV(...)` |
 | `last_good` 持久化与回落 | 69-186 | `saveLastGood/loadLastGood` |
@@ -565,7 +763,7 @@ Go 用 struct + `binding` tag（gin 默认接 `validator/v10`）：
 
 ---
 
-## 10. 缓存层 (`internal/cache/cache.go`)
+## 10. 缓存层 (`pkg/cache/cache.go`)
 
 **Python 对应**：`cache.py`（432 行）
 
@@ -602,19 +800,24 @@ Pipeline() redis.Pipeliner  // 直接暴露给限流中间件
 
 ---
 
-## 11. 安全工具 (`internal/security/`)
+## 11. 安全工具（`internal/security/` + `pkg/ipx/` + `pkg/ratelimit/`）
 
 **Python 对应**：`security.py`（166 行）
 
-| 函数 | Python 行 | Go 函数 |
-|---|---|---|
-| `get_client_ip(request)` | 41-75 | `ClientIP(c *gin.Context) string` — 信任 `TRUSTED_PROXY_COUNT` 个反代，按 `X-Forwarded-For` 反向取候选；用 `net.ParseIP` 校验 |
-| `check_rate_limit` | 78-105 | `CheckRateLimit(ctx, keySuffix, ns, limit, period, detail) error` — Redis sorted set 滑窗；失败降级本地 |
-| `enforce_cooldown` | 108-119 | `EnforceCooldown(ctx, key, ttl, detail) error` |
-| `is_valid_fund_code` | 122-123 | `IsValidFundCode(code) bool` |
-| `is_valid_benchmark_code` | 126-127 | `IsValidBenchmarkCode(code) bool` |
-| `build_sync_etag(payload)` | 138-157 | `BuildSyncEtag(payload string) string` — 剔除 `timestamp` 与 `funds[*]` 的瞬时字段后 SHA256[:16] |
-| `parse_bearer_subject(header)` | 160-165 | `ParseBearerSubject(header) string` |
+> Python 源里把"通用算法"和"业务键名/字段"混在一个文件，Go 版按"是否含业务知识"拆开：
+> - 算法（IP 解析、滑窗）→ `pkg/`
+> - 配置（限流键、ETag 字段剔除规则、基金代码正则）→ `internal/security/`
+
+| 函数 | Python 行 | Go 落位 | 备注 |
+|---|---|---|---|
+| `get_client_ip(request)` | 41-75 | `pkg/ipx/ip.go: ClientIP(headers http.Header, peer string, trustedProxyCount int) string` | 不依赖 Gin，便于复用 |
+| `check_rate_limit` 算法 | 78-105 | `pkg/ratelimit/sliding_window.go: Allow(ctx, redis, key, limit, period) (bool, error)` | 只关心"key+limit+period"，不知道 key 怎么拼 |
+| `check_rate_limit` 业务封装 | 同上 | `internal/security/ratelimit.go: CheckRateLimit(ctx, ns, keySuffix, limit, period, detail) error` | 拼 `rl:{ns}:{keySuffix}`，错时抛 `HTTPException` 等价 |
+| `enforce_cooldown` | 108-119 | 同上文件 | 简单 `SET NX EX` |
+| `is_valid_fund_code` | 122-123 | `internal/security/validators.go: IsValidFundCode(code) bool` | 业务正则 |
+| `is_valid_benchmark_code` | 126-127 | 同上 | 业务正则 |
+| `build_sync_etag(payload)` | 138-157 | `internal/security/etag.go: BuildSyncEtag(payload string) string` | 含 funds[*] 字段过滤，业务相关 |
+| `parse_bearer_subject(header)` | 160-165 | `pkg/util/auth.go: ParseBearerSubject(header string) string` 或直接放 `internal/middleware/auth.go` 当 helper | |
 
 ---
 
@@ -634,11 +837,12 @@ Go 用 `viper` 或 `caarlos0/env`，所有字段一一对应。**重要默认值
 
 ---
 
-## 13. 工具函数
+## 13. 工具函数 (`pkg/util/`)
 
 **Python 对应**：`utils.py`（33 行）
-- `utcnow()` → Go：`time.Now().UTC()`（不要去掉时区，GORM 会自己处理）。
-- `round_half_up(value, digits)` → Go：用 `shopspring/decimal.RoundHalfUp`。直接：`decimal.NewFromFloat(v).Round(digits)` 不是 half-up，需要 `Quantize(decimal.New(1, -digits), decimal.RoundHalfUp)`。
+- `utcnow()` → `pkg/util/time.go: Utcnow() time.Time`，用 `time.Now().UTC()`（不要去掉时区，GORM 会自己处理）。
+- `round_half_up(value, digits)` → `pkg/util/decimal.go: RoundHalfUp(v decimal.Decimal, digits int32) decimal.Decimal`，用 `v.Quantize(decimal.New(1, -digits), decimal.RoundHalfUp)`（**直接 `Round()` 是银行家舍入，不一样**）。
+- 北京时间 / 美东时间常量也放这里：`var BJ = time.FixedZone("Asia/Shanghai", 8*3600)`、`var NY, _ = time.LoadLocation("America/New_York")`。
 
 ---
 
@@ -689,24 +893,29 @@ Go 测试放对应包下：
 
 ## 17. 重写步骤建议（顺序很重要）
 
-1. **基础设施先行**：`config` → `db` → `cache` → `security` → `model` → 一个空的 `gin.Engine` 跑起来。
-2. **不依赖外部 API 的 handler 先做**：`health` / `version` / `admin` / `auth`（含 JWT 中间件） / `public`。
-3. **核心数据源封装**：`internal/service/akshare/` 全部 —— 这是后续所有功能的底座。**写完一个就先用单元测试 +`httptest.NewServer` mock 上游** 验证。
-4. **基础业务**：`fund_service` / `win_rate` / `holdings_estimate` / `market_index`。
-5. **handler/fund.go` / `market.go`** 接入。
-6. **AI 与用户数据**：`ai_service` → `handler/user.go`（截图 / 同步 / 弹幕）。
-7. **夜估**：`calibration` → `night_estimate` → `market.NightEst` handler。
-8. **后台任务**：`task/background.go` 一次性接入所有 sub-task；先用 `--no-leader-lock` 模式本地跑通，再开启分布式锁。
-9. **Agent 相关**：`agent_request` handler + Auth 中间件里的 `AgentToken` 路径校验。
-10. **JCTI / 邀请裂变 / 截图导入**：业务尾部。
-11. **静态文件 & SPA fallback**：最后接入。
-12. **端到端联调**：用真实 APP / 前端打全部接口；对比 Python 版的响应字段是否一一对齐（**字段名拼写、大小写必须 100% 一致**，前端硬编码读它们）。
+1. **基础设施先行**：`config` → `db` → `cache` → `security` → `model` → `repository`（先写接口与最常用的 `user_repo` / `fund_basic_info_repo` / `agent_token_repo`） → 一个空的 `gin.Engine` 跑起来。
+2. **router 骨架**：先在 `internal/router/router.go` 把 10 个子路由文件全部建出来（仅占位 `// TODO`），让 §5 的功能清单在目录层面**先可见**，避免后续遗漏。
+3. **不依赖外部 API 的 handler 先做**：`health` / `version` / `admin` / `auth`（含 JWT 中间件） / `public`。每个 handler 写完同步把 router 行打开、把对应 repository 方法补齐。
+4. **核心数据源封装**：`internal/service/akshare/` 全部 —— 这是后续所有功能的底座。**写完一个就先用单元测试 + `httptest.NewServer` mock 上游** 验证。
+5. **基础业务**：`fund_service` / `win_rate` / `holdings_estimate` / `market_index`（这些 service 调 `fund_nav_repo` / `fund_basic_info_repo`）。
+6. **handler/fund.go / market.go** 接入。
+7. **AI 与用户数据**：`ai_service` → `handler/user.go`（截图 / 同步 / 弹幕）；新增 `user_data_repo`。
+8. **夜估**：`calibration_repo` → `calibration` service → `night_estimate` → `market.NightEst` handler。
+9. **后台任务**：`task/background.go` 一次性接入所有 sub-task；先用 `--no-leader-lock` 模式本地跑通，再开启分布式锁。
+10. **Agent 相关**：`agent_request_repo` + `agent_request` handler + Auth 中间件里的 `AgentToken` 路径校验。
+11. **JCTI / 邀请裂变 / 截图导入**：业务尾部。
+12. **静态文件 & SPA fallback**：最后接入。
+13. **端到端联调**：用真实 APP / 前端打全部接口；对比 Python 版的响应字段是否一一对齐（**字段名拼写、大小写必须 100% 一致**，前端硬编码读它们）。
 
 ---
 
 ## 18. 最后的检查清单（防遗漏）
 
-- [ ] 所有 §5 表里的 HTTP 接口都有 Go handler，且响应 JSON 字段名与 Python 一致。
+- [ ] 所有 §5 表里的 HTTP 接口都有 `router/<file>.go` 注册行 + `handler/<file>.go` 处理函数，且响应 JSON 字段名与 Python 一致。
+- [ ] handler **不直接** import `gorm.io/gorm`，所有 DB 访问都走 `repository` 包。
+- [ ] `pkg/` 下所有包**不 import `internal/`**（用 `go vet ./pkg/...` 加 `go list -deps` 抽查依赖图）。
+- [ ] 跨表写操作通过 `db.Transaction(...)` 包裹，repository 提供 `XxxTx(ctx, tx, ...)` 变体。
+- [ ] `SELECT FOR UPDATE`（注册时锁邀请人）有专用 `LockByIDForUpdateTx` 方法，对应 `routers/auth.py:390-403`。
 - [ ] 所有 §7 后台 sub-task 都注册到 `internal/task/background.go`。
 - [ ] 所有 §8 GORM 模型都执行了 `AutoMigrate`，且 §8 末尾的 7 个迁移函数都有 Go 等价物（幂等 + 失败 panic）。
 - [ ] 中间件顺序与 Python 一致（ProxyHeaders → RateLimit → BlogStats → CORS → GZip → 路由）。
