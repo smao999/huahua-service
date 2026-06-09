@@ -11,6 +11,16 @@
 
 Python 用 `APIRouter` + 装饰器注册路由：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（15 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 # routers/auth.py
 from fastapi import APIRouter, Depends
@@ -28,6 +38,8 @@ async def login(...):
 # 然后在 app_factory.py 里注册：
 app.include_router(auth.router)  # 挂到 /api/auth 前缀下
 ```
+</details>
+
 
 **Gin 的区别**：Go 把"路由注册（哪个 URL 对应哪个函数）"和"处理函数"放在不同的包里。
 `router/` 包只做注册，`handler/` 包写处理函数。
@@ -35,6 +47,16 @@ app.include_router(auth.router)  # 挂到 /api/auth 前缀下
 ---
 
 ## 2.2 先写 router 入口
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （25 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/router/router.go — 路由注册入口
@@ -63,6 +85,8 @@ func Register(r *gin.Engine, h *handler.Handlers) {
     registerPublic(api, h.Public)   // routers/public.py
 }
 ```
+</details>
+
 
 ### Gin 的 Group 机制
 
@@ -79,6 +103,16 @@ g.POST("/register", handler) // 变成了 POST /api/auth/register
 ---
 
 ## 2.3 写一个完整的路由文件（health 为例）
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （20 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/router/health.go — 健康检查路由
@@ -102,10 +136,22 @@ func registerHealth(rg *gin.RouterGroup, h *handler.HealthHandler) {
     g.GET("/redis", h.Redis)  // GET /api/health/redis
 }
 ```
+</details>
+
 
 ## 2.4 其他 9 个路由文件全部占位
 
 每个文件只写函数签名 + 注释说明 Python 对应什么路由，然后全部 `// TODO`：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （44 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/router/auth.go — 认证路由
@@ -153,6 +199,8 @@ func registerAuth(rg *gin.RouterGroup, h *handler.AuthHandler) {
     // auth.POST("/change-password", h.ChangePassword)
 }
 ```
+</details>
+
 
 其他路由文件同理——这里给出每个文件的 Python 对照，方便你写注释：
 
@@ -239,6 +287,16 @@ func registerAuth(rg *gin.RouterGroup, h *handler.AuthHandler) {
 
 ## 2.5 在 app.go 中启用路由注册
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （18 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // internal/app/app.go
 package app
@@ -259,6 +317,8 @@ func New(cfg *config.Config) *gin.Engine {
     return r
 }
 ```
+</details>
+
 
 ---
 

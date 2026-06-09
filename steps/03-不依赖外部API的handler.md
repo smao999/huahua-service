@@ -9,6 +9,16 @@
 
 ### Python 源码
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（38 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 # routers/health.py — 健康检查
 
@@ -49,6 +59,8 @@ async def health(response: Response):
     
     return {"status": status, "components": components}
 ```
+</details>
+
 
 **Python 这段代码做了什么**：
 1. 连接数据库执行 `SELECT 1` 检查数据库是否活着
@@ -57,6 +69,16 @@ async def health(response: Response):
 4. 有 error 时返回 HTTP 503
 
 ### Go 实现
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （101 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/handler/health.go
@@ -161,6 +183,8 @@ func (h *HealthHandler) Redis(c *gin.Context) {
     })
 }
 ```
+</details>
+
 
 **健康检查 handler 能先跑通的原理**：
 - 这个 handler 不需要访问数据库！`db.GORM` 和 `db.Redis` 这步可以跳过
@@ -177,6 +201,16 @@ Auth 模块包含注册、登录、JWT、密码哈希、邮箱验证码、AgentT
 ### 3.2.1 Schema —— 请求/响应数据结构
 
 **Python 的 schemas.py**（Pydantic 模型）：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（22 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 # schemas.py — 请求和响应的数据结构定义
@@ -202,6 +236,8 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 ```
+</details>
+
 
 **Pydantic 的 `Field` 参数含义**：
 - `pattern`：正则表达式校验
@@ -210,6 +246,16 @@ class TokenResponse(BaseModel):
 - `EmailStr`：自动校验邮箱格式
 
 **Go 实现 —— `json` tag 和 `binding` tag**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （27 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/schema/auth.go
@@ -240,6 +286,8 @@ type TokenResponse struct {
     UserID      int64  `json:"user_id"`
 }
 ```
+</details>
+
 
 **Go binding tag 速查**：
 
@@ -275,6 +323,16 @@ def create_access_token(data: dict):
 4. 返回字符串格式的 JWT token
 
 **Go 实现**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （60 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/security/jwt.go
@@ -338,6 +396,8 @@ func ParseToken(secret, tokenString string) (*Claims, error) {
     return claims, nil
 }
 ```
+</details>
+
 
 ### 3.2.3 Bcrypt 密码哈希
 
@@ -352,6 +412,16 @@ def get_password_hash(password): return pwd_context.hash(password)
 ```
 
 **Go**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （20 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/security/bcrypt.go
@@ -375,10 +445,22 @@ func CheckPassword(password, hash string) bool {
     return err == nil
 }
 ```
+</details>
+
 
 ### 3.2.4 Auth 中间件
 
 **Python `get_current_user`**（FastAPI 依赖注入）：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（50 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 from fastapi.security import OAuth2PasswordBearer
@@ -432,8 +514,20 @@ async def get_current_user(
     
     return user
 ```
+</details>
+
 
 **Go 中间件**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （84 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/middleware/auth.go
@@ -521,10 +615,22 @@ func AdminRequired() gin.HandlerFunc {
     }
 }
 ```
+</details>
+
 
 ### 3.2.5 Auth Service
 
 **Python 的函数风格的业务逻辑**（写在 `routers/auth.py` 中，非类）：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（34 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 # Python 的注册逻辑（在 routers/auth.py 的 register() 函数中）
@@ -562,8 +668,20 @@ async def register(request: Request, user_in: UserCreate, db: Session = Depends(
     token = create_access_token({"sub": new_user.username})
     return UserOut.model_validate(new_user)
 ```
+</details>
+
 
 **Go 的 Service 层**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （119 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/auth/auth_service.go
@@ -686,8 +804,20 @@ func generateUID() string {
     return fmt.Sprintf("%08d", time.Now().UnixNano()%100000000)
 }
 ```
+</details>
+
 
 ### 3.2.6 Auth Handler
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （78 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/handler/auth.go
@@ -769,8 +899,20 @@ func (h *AuthHandler) Me(c *gin.Context) {
     c.JSON(http.StatusOK, user)
 }
 ```
+</details>
+
 
 ### 3.2.7 串联：在 app.go 注入所有依赖
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （53 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/app/app.go
@@ -827,8 +969,20 @@ func New(cfg *config.Config) *gin.Engine {
     return r
 }
 ```
+</details>
+
 
 ### 3.2.8 更新 handler.NewHandlers
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （35 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/handler/handler.go
@@ -867,6 +1021,8 @@ func NewHandlers(opts ...HandlersOption) *Handlers {
     return h
 }
 ```
+</details>
+
 
 ---
 
@@ -891,6 +1047,16 @@ func registerAuth(rg *gin.RouterGroup, h *handler.AuthHandler) {
 
 ## 3.4 验证
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 bash  （20 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```bash
 # 1. 编译
 go build ./...
@@ -913,6 +1079,8 @@ curl -X POST http://localhost:8080/api/auth/token \
 curl http://localhost:8080/api/health
 # 期望：{"components":{"db":"ok","redis":"ok"},"status":"ok"}
 ```
+</details>
+
 
 ---
 
@@ -962,6 +1130,16 @@ Auth handler 的注册/登录流程中需要发邮箱验证码。Python 用 `fas
 
 ### Python 源码
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（26 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 # services/mail_service.py
 class MailService:
@@ -990,10 +1168,22 @@ class MailService:
         stored = await cache.get(f"verify:{type_prefix}:{email}")
         return str(stored) == str(code)  # 匹配后删除（一次性）
 ```
+</details>
+
 
 ### Go 实现
 
 依赖安装：`go get gopkg.in/gomail.v2`
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （67 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/mail/mail_service.go — 新建文件
@@ -1064,12 +1254,24 @@ func generateCode(length int) (string, error) {
     return string(code), nil
 }
 ```
+</details>
+
 
 ---
 
 ## 补充 2：全量中间件（从 Step 14 移入）
 
 ### 2.1 中间件聚合结构
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （27 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/middleware/middleware.go — 新建/覆盖
@@ -1100,10 +1302,22 @@ func New(jwtCfg security.JWTConfig, userRepo repository.UserRepository, agentTok
     }
 }
 ```
+</details>
+
 
 ### 2.2 CORS 中间件
 
 **Python 代码**：`app.add_middleware(CORSMiddleware, allow_origins=..., allow_methods=["GET","POST","PUT","DELETE","OPTIONS"])`
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （18 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/middleware/cors.go — 新建文件
@@ -1125,10 +1339,22 @@ func CORS() gin.HandlerFunc {
     })
 }
 ```
+</details>
+
 
 安装：`go get github.com/gin-contrib/cors`
 
 ### 2.3 全局限流中间件
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （34 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/middleware/ratelimit.go — 新建文件
@@ -1166,8 +1392,20 @@ func RateLimit(calls, period int) gin.HandlerFunc {
     }
 }
 ```
+</details>
+
 
 ### 2.4 请求日志中间件
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （18 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/middleware/logger.go — 新建文件
@@ -1189,10 +1427,22 @@ func RequestLogger() gin.HandlerFunc {
     }
 }
 ```
+</details>
+
 
 ### 2.5 中间件装配顺序（在 app.go 中）
 
 必须跟 Python 的顺序一致：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （17 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/app/app.go
@@ -1213,8 +1463,20 @@ func New(cfg *config.Config) *gin.Engine {
     return r
 }
 ```
+</details>
+
 
 ### 2.6 BlogStats 中间件
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （36 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/middleware/blogstats.go — 新建文件
@@ -1254,3 +1516,5 @@ func startsWith(s, prefix string) bool {
     return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }
 ```
+</details>
+

@@ -21,6 +21,16 @@ AgentToken 是**长期有效的 API 密钥**，用于程序/机器人访问用�
 
 **Python 代码**（`routers/auth.py`）：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（38 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 # AgentToken 鉴权流程
 @router.post("/agent-token", response_model=AgentTokenCreated)
@@ -61,12 +71,24 @@ if auth_header.startswith("AgentToken "):
         raise HTTPException(403, "无权访问")
     return db.query(User).filter(User.id == agent_tok.user_id).first()
 ```
+</details>
+
 
 ---
 
 ## 10.2 Go 实现
 
 ### 10.2.1 AgentToken Model
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （18 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/model/agent_token.go
@@ -88,8 +110,20 @@ type AgentToken struct {
 
 func (AgentToken) TableName() string { return "agent_tokens" }
 ```
+</details>
+
 
 ### 10.2.2 AgentToken Repository
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （46 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/repository/agent_token_repo.go
@@ -139,8 +173,20 @@ func (r *agentTokenRepo) UpdateLastUsed(ctx context.Context, id int64, ip string
         }).Error
 }
 ```
+</details>
+
 
 ### 10.2.3 Auth 中间件中加上 AgentToken 分支
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （60 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/middleware/auth.go 追加
@@ -204,6 +250,8 @@ func isAgentTokenAllowed(method, path, scope string) bool {
     return true
 }
 ```
+</details>
+
 
 ---
 

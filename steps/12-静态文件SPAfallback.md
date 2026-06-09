@@ -6,6 +6,16 @@
 
 ## 12.1 Python 源码
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（27 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 # core/app_factory.py 中
 import os
@@ -35,10 +45,22 @@ if os.path.isdir(_FRONTEND_DIST):
         # 其他所有路径返回 index.html（让前端路由处理）
         return FileResponse(os.path.join(_FRONTEND_DIST, "index.html"))
 ```
+</details>
+
 
 ---
 
 ## 12.2 Go 实现
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （52 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/app/app.go 中追加
@@ -94,6 +116,8 @@ func New(cfg *config.Config) *gin.Engine {
     return r
 }
 ```
+</details>
+
 
 **Gin NoRoute 的行为**：
 - 只匹配**没有被任何路由注册**的路径

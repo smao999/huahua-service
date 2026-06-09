@@ -10,6 +10,16 @@ Python 把基金相关路由分散在两个地方：
 
 **routers/fund.py**（处理 HTTP 请求、调 service）：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（27 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException
 from schemas import EstimateRequest
@@ -39,8 +49,20 @@ async def api_detail(code: str):
     
     return {**detail, "winRateTable": win_rate}
 ```
+</details>
+
 
 **services/fund_service.py**（业务逻辑）：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（43 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 class FundService:
@@ -87,6 +109,8 @@ class FundService:
             "fees": json.loads(info.fees_json) if info and info.fees_json else {},
         }
 ```
+</details>
+
 
 ---
 
@@ -102,6 +126,16 @@ Go 的 Service 层是"业务编排"的场所，它：
 ## 5.3 Go 实现
 
 ### 5.3.1 FundBasicInfo Repository
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （43 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/repository/fund_basic_info_repo.go
@@ -148,8 +182,20 @@ func (r *fundBasicInfoRepo) FindAll(ctx context.Context) ([]model.FundBasicInfo,
     return funds, err
 }
 ```
+</details>
+
 
 ### 5.3.2 FundNav Repository
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （44 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/repository/fund_nav_repo.go
@@ -197,8 +243,20 @@ func (r *fundNavRepo) GetByDate(ctx context.Context, code string, date time.Time
     return &nav, nil
 }
 ```
+</details>
+
 
 ### 5.3.3 Fund Service
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （126 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/fund/fund_service.go
@@ -328,8 +386,20 @@ func (s *FundService) GetFundDetail(ctx context.Context, code string) (*FundDeta
     return result, nil
 }
 ```
+</details>
+
 
 ### 5.3.4 Fund Handler
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （59 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/handler/fund.go
@@ -392,6 +462,8 @@ func (h *FundHandler) Detail(c *gin.Context) {
     c.JSON(http.StatusOK, detail)
 }
 ```
+</details>
+
 
 ### 5.3.5 更新路由注册
 
@@ -454,6 +526,16 @@ def get_or_compute(fund_code, confirm_days=1):
 
 ### Go 实现
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （47 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // internal/service/winrate/service.go — 新建文件
 package winrate
@@ -503,6 +585,8 @@ func bias20(prices []float64) float64 { return 0 }
 func computeBiasWinRates(prices []float64, window int) map[float64]float64 { return nil }
 func findWinRate(winRates map[float64]float64, bias float64) *Result { return nil }
 ```
+</details>
+
 
 ### 在 Fund Detail 中接入
 

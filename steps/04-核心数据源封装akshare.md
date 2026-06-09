@@ -24,6 +24,16 @@ akshare 是一个 Python 第三方库，但它并不是真正的"财经数据引
 
 ## 4.2 创建 HTTP 客户端基座
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （55 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // internal/service/akshare/client.go — HTTP 客户端
 package akshare
@@ -81,12 +91,24 @@ func (c *Client) Get(url string) ([]byte, error) {
     return body, nil
 }
 ```
+</details>
+
 
 ---
 
 ## 4.3 实现基金实时估值接口
 
 **Python 源码**（在 `services/akshare_service.py` 中）：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（17 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 # Python 用 httpx 异步 HTTP 客户端获取基金实时估值
@@ -107,8 +129,20 @@ def fetch_fund_estimate(code: str):
     json_str = data[8:-2]
     return json.loads(json_str)
 ```
+</details>
+
 
 **Go 实现**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （78 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/akshare/estimate.go
@@ -190,6 +224,8 @@ func (c *Client) BatchGetFundEstimates(codes []string) ([]*FundEstimate, error) 
     return results, nil
 }
 ```
+</details>
+
 
 **注意 goroutine 的闭包陷阱**：
 ```go
@@ -231,6 +267,16 @@ def fetch_fund_history_akshare(code: str):
 ```
 
 **Go 实现**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （52 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/akshare/history.go
@@ -286,10 +332,22 @@ func (c *Client) GetFundHistory(fundCode string) ([]NavRecord, error) {
     return resp.Data.LSJZList, nil
 }
 ```
+</details>
+
 
 ---
 
 ## 4.5 写单元测试（mock 上游 HTTP）
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （25 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/akshare/estimate_test.go
@@ -318,6 +376,8 @@ func TestGetFundEstimate(t *testing.T) {
     t.Log("测试思路：让 Client 的 fundgz 基础 URL 可配置，然后指向 mock server")
 }
 ```
+</details>
+
 
 **测试封装改进**——让 client 的 URL 可配置：
 
@@ -381,6 +441,16 @@ go test -v ./internal/service/akshare/
 
 aksahre client 的核心是 HTTP 请求，建议把通用 HTTP 客户端封装到 `pkg/httpx/`：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （46 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // pkg/httpx/client.go — 新建文件
 package httpx
@@ -429,8 +499,20 @@ func (c *Client) Get(url string) ([]byte, error) {
     return io.ReadAll(resp.Body)
 }
 ```
+</details>
+
 
 然后在 akshare client 中使用：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （16 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/akshare/client.go
@@ -450,3 +532,5 @@ func NewClient() *Client {
     }
 }
 ```
+</details>
+

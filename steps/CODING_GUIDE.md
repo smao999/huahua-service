@@ -33,6 +33,16 @@
 
 原项目 `backend/` 目录长这样，先混个眼熟：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 代码    （35 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```
 backend/           ← Python FastAPI 后端
 ├── main.py        ← 启动入口（uvicorn）
@@ -69,8 +79,20 @@ backend/           ← Python FastAPI 后端
 ├── tests/         ← 12 个测试文件
 └── scripts/       ← 运维脚本
 ```
+</details>
+
 
 **重写后的 Go 项目结构（参照 README.md §1）：**
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 代码    （18 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```
 huahua-service/     ← 当前 Go 项目（现在只有文件夹骨架）
@@ -91,6 +113,8 @@ huahua-service/     ← 当前 Go 项目（现在只有文件夹骨架）
 ├── pkg/cache/               ← cache.py 对应
 └── migrations/              ← Python 原版迁移脚本
 ```
+</details>
+
 
 ### 对应关系速览（Python → Go）
 
@@ -252,6 +276,16 @@ return &user, nil
 
 Python 用 `pydantic-settings` + 环境变量读配置。Go 里用标准 `os.Getenv`：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （61 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // internal/config/config.go
 package config
@@ -315,6 +349,8 @@ func getEnvInt(key string, defaultVal int) int {
     return defaultVal
 }
 ```
+</details>
+
 
 **对比 Python 源码**：
 
@@ -342,6 +378,16 @@ settings = Settings()  # 全局单例
 
 Python 用 SQLAlchemy 的 `create_engine` + `SessionLocal`。
 Go 用 GORM 操作 PostgreSQL，`go-redis` 操作 Redis。
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （69 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/db/db.go
@@ -414,6 +460,8 @@ func Close() {
     }
 }
 ```
+</details>
+
 
 **对比 Python 源码：**
 
@@ -431,6 +479,16 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 ```
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（16 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 # Python cache.py —— 对 redis 的封装
@@ -450,12 +508,24 @@ class Cache:
 
 cache = Cache()  # 全局单例
 ```
+</details>
+
 
 ### 1.3 model/*.go —— 数据库模型
 
 **Python 原版参考**：[models.py](Python backend → models.py)（161 行，~10 个表）
 
 把 `model.py` 里每个 SQLAlchemy 类转成 GORM 结构体：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （21 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/model/user.go
@@ -480,11 +550,23 @@ type User struct {
     CreatedAt    time.Time  `gorm:"autoCreateTime"`
 }
 ```
+</details>
+
 
 > **`*int64` 和 `*time.Time` 是什么意思？**
 > Go 里指针表示"这个字段可能为 nil"（数据库的 NULL）。
 > `InvitedBy *int64` = 数据库里 invited_by 列可以为 NULL。
 > 如果写成 `InvitedBy int64`，那它在数据库里永远是 0，没法表示"没有邀请人"。
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （22 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/model/fund_basic_info.go
@@ -510,6 +592,8 @@ func (FundBasicInfo) TableName() string {
     return "fund_basic_info"
 }
 ```
+</details>
+
 
 **对比 Python models.py 关键片段：**
 
@@ -537,6 +621,16 @@ def _do_register():
 ```
 
 **Go 里必须把这种操作放进 repository：**
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （46 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/repository/user_repo.go
@@ -586,6 +680,8 @@ func (r *userRepo) Update(ctx context.Context, user *model.User) error {
     return r.db.WithContext(ctx).Save(user).Error
 }
 ```
+</details>
+
 
 > **为什么用 interface？**
 > 测试时可以写一个 MockUserRepository 替代真正的数据库，不用连真实的 PostgreSQL。
@@ -594,6 +690,16 @@ func (r *userRepo) Update(ctx context.Context, user *model.User) error {
 ### 1.5 cmd/server/main.go —— 启动入口
 
 **Python 原版参考**：[main.py](Python backend → main.py) + [core/app_factory.py](Python backend → core/app_factory.py)
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （64 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // cmd/server/main.go
@@ -661,6 +767,8 @@ func main() {
     slog.Info("服务已关闭")
 }
 ```
+</details>
+
 
 **对比 Python main.py：**
 
@@ -682,6 +790,16 @@ if __name__ == "__main__":
 ### 1.6 app/app.go —— 装配 Gin Engine
 
 **Python 原版参考**：[core/app_factory.py](Python backend → core/app_factory.py)（~379 行，最重要的文件）
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （29 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/app/app.go
@@ -714,8 +832,20 @@ func New(cfg *config.Config) *gin.Engine {
     return r
 }
 ```
+</details>
+
 
 **对比 Python app_factory.py 的关键部分：**
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（20 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 # Python create_app()
@@ -739,6 +869,8 @@ def create_app() -> FastAPI:
     @app.exception_handler(Exception)
     async def _global_exception_handler(...)
 ```
+</details>
+
 
 > **Gin vs FastAPI 的关键差异**：
 > - FastAPI 用装饰器 `@router.get("/path")` 注册路由，Gin 在 router 文件里手动 `r.GET("/path", handler)`
@@ -777,6 +909,16 @@ go run cmd/server/main.go
 
 先建 handler 的"总线"——后面所有 handler 都往这里装：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （23 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // internal/handler/handler.go
 package handler
@@ -802,8 +944,20 @@ func NewHandlers() *Handlers {
     }
 }
 ```
+</details>
+
 
 ### 2.2 创建 router 入口
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （23 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/router/router.go
@@ -830,8 +984,20 @@ func Register(r *gin.Engine, h *handler.Handlers) {
     registerPublic(api, h.Public)        // routers/public.py
 }
 ```
+</details>
+
 
 ### 2.3 先写一个完整的 router（health）
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （17 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/router/health.go
@@ -852,8 +1018,20 @@ func registerHealth(rg *gin.RouterGroup, h *handler.HealthHandler) {
     g.GET("/redis", h.Redis)   // GET /api/health/redis
 }
 ```
+</details>
+
 
 ### 2.4 其他路由全部占位
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （19 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/router/auth.go
@@ -876,6 +1054,8 @@ func registerAuth(rg *gin.RouterGroup, h *handler.AuthHandler) {
     // ...
 }
 ```
+</details>
+
 
 其余 8 个文件同理，先都建好，函数内部的注册行全部 `// TODO` 注释掉。
 
@@ -929,6 +1109,16 @@ async def health(response: Response):
 ```
 
 **Go 实现：**
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （63 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/handler/health.go
@@ -995,6 +1185,8 @@ func (h *HealthHandler) Redis(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"status": "Redis 诊断（待实现）"})
 }
 ```
+</details>
+
 
 **救：在 app.go 的 New 函数里把 router 注册调用加上**
 
@@ -1029,6 +1221,16 @@ curl http://localhost:8080/api/health
 
 **Python 原版**：[schemas.py](Python backend → schemas.py) 的 `UserCreate`、`TokenResponse` 等
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （23 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // internal/schema/auth.go
 package schema
@@ -1054,6 +1256,8 @@ type TokenResponse struct {
     UserID      int64  `json:"user_id"`
 }
 ```
+</details>
+
 
 > `binding:"required,min=4,max=20"` 是 Gin 内置的校验标签。
 > Gin 底层用 `validator/v10`，跟 Pydantic 的 `Field(..., pattern=...)` 功能类似。
@@ -1061,6 +1265,16 @@ type TokenResponse struct {
 #### 3.2b Security —— JWT 工具
 
 **Python 原版**：[security.py](Python backend → security.py) 中的 JWT 部分 + `routers/auth.py` 的 `create_access_token`
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （48 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/security/jwt.go
@@ -1112,6 +1326,8 @@ func ParseToken(secret, tokenString string) (*Claims, error) {
     return claims, nil
 }
 ```
+</details>
+
 
 **对照 Python 的 JWT 部分**：
 
@@ -1129,6 +1345,16 @@ def create_access_token(data: dict):
 #### 3.2c Bcrypt 密码哈希
 
 Python 用 `passlib` 库，Go 用 `golang.org/x/crypto/bcrypt`：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （16 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/security/bcrypt.go
@@ -1148,6 +1374,8 @@ func CheckPassword(password, hash string) bool {
     return err == nil
 }
 ```
+</details>
+
 
 **对照 Python**：
 
@@ -1170,6 +1398,16 @@ go get golang.org/x/crypto/bcrypt
 
 对比 Python 的 [`get_current_user` 依赖](Python backend → routers/auth.py 行 200+)：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（18 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 # Python —— FastAPI 的 Depends
 async def get_current_user(
@@ -1190,8 +1428,20 @@ async def get_current_user(
     ...
     return user
 ```
+</details>
+
 
 **Go 中间件**——每次请求进入时，先过中间件验证身份，把用户信息存到 Context：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （59 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/middleware/auth.go
@@ -1254,10 +1504,22 @@ func AuthRequired(jwtCfg security.JWTConfig, userRepo repository.UserRepository)
     }
 }
 ```
+</details>
+
 
 #### 3.2e Auth service —— 真正的业务逻辑
 
 Python 的用户注册是写在 `routers/auth.py` 里的（~150 行），Go 必须抽到 service 层：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （102 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/auth/auth_service.go
@@ -1363,12 +1625,24 @@ func generateUID() string {
     return fmt.Sprintf("%08d", time.Now().UnixNano()%100000000)
 }
 ```
+</details>
+
 
 > **对照 Python**：Python 的注册逻辑在 `routers/auth.py` 的 `register()` 函数里（~120 行），
 > 包含了校验验证码、检查邮箱黑名单、创建用户、发放邀请奖励等一系列逻辑。
 > Go service 层做的事情一模一样，只是把 `db.query(User).filter(...).first()` 换成了 `s.userRepo.GetByUsername(ctx, ...)`。
 
 #### 3.2f Auth handler —— 接 HTTP 请求
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （59 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/handler/auth.go
@@ -1431,11 +1705,23 @@ func (h *AuthHandler) Login(c *gin.Context) {
     })
 }
 ```
+</details>
+
 
 #### 3.2g 串联：在 handler.NewHandlers 里注入依赖
 
 回到 `handler/handler.go`，因为 AuthHandler 需要 AuthService，
 所以 NewHandlers 需要接收参数：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （18 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/handler/handler.go
@@ -1457,8 +1743,20 @@ func NewHandlers(authService *auth.AuthService) *Handlers {
     }
 }
 ```
+</details>
+
 
 然后在 `app.go` 里创建依赖链：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （22 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/app/app.go（概览）
@@ -1484,6 +1782,8 @@ func New(cfg *config.Config) *gin.Engine {
     return r
 }
 ```
+</details>
+
 
 #### 3.2h 打开路由注册
 
@@ -1525,6 +1825,16 @@ akshare 是一个 Python 财经数据库，本质就是发 HTTP 请求到各个�
 返回的是 `jsonpgz({"fundcode":"000001","gsz":1.234,...});` 格式。
 
 ### 4.2 实现 Go HTTP 客户端
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （45 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/akshare/client.go
@@ -1573,6 +1883,8 @@ func (c *Client) get(url string) ([]byte, error) {
     return io.ReadAll(resp.Body)
 }
 ```
+</details>
+
 
 ### 4.3 实现基金实时估值接口
 
@@ -1591,6 +1903,16 @@ async def fetch_fund_estimate(code: str):
 ```
 
 **Go 实现**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （42 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/akshare/estimate.go
@@ -1636,8 +1958,20 @@ func (c *Client) GetFundEstimate(fundCode string) (*FundEstimate, error) {
     return &est, nil
 }
 ```
+</details>
+
 
 ### 4.4 写单元测试 mock 上游
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （26 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/akshare/estimate_test.go
@@ -1667,6 +2001,8 @@ func TestGetFundEstimate(t *testing.T) {
     // 见下方改进：把 URL 作为参数传入 GetFundEstimate
 }
 ```
+</details>
+
 
 > **测试技巧**：写 HTTP 客户端时，把 base URL 设计成可配置的，这样测试时可以指向 mock 服务器。
 
@@ -1694,6 +2030,16 @@ go test ./internal/service/akshare/
 ### 5.1 Fund Service
 
 **Python 原版**：[services/fund_service.py](Python backend → services/fund_service.py) ~300 行
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （80 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/fund/fund_service.go
@@ -1777,8 +2123,20 @@ type FundEstimateResult struct {
     Time     string          `json:"time"`
 }
 ```
+</details>
+
 
 ### 5.2 Fund Repository
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （38 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/repository/fund_basic_info_repo.go
@@ -1820,8 +2178,20 @@ func (r *fundBasicInfoRepo) FindAll(ctx context.Context) ([]model.FundBasicInfo,
     return funds, err
 }
 ```
+</details>
+
 
 ### 5.3 Fund Handler
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （42 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/handler/fund.go
@@ -1867,6 +2237,8 @@ func (h *FundHandler) BatchEstimate(c *gin.Context) {
     })
 }
 ```
+</details>
+
 
 > **对照 Python 代码**：
 > ```python
@@ -1925,6 +2297,16 @@ curl -X POST http://localhost:8080/api/estimate/batch \
 **Python 原版**：[services/ai_service.py](Python backend → services/ai_service.py)
 
 ### 7.1 Go 里发 HTTP POST 请求调用 AI
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （103 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/ai/ai_service.go
@@ -2031,8 +2413,20 @@ func (s *AIService) chatWithGemini(ctx context.Context, messages []Message) (str
     return "", fmt.Errorf("Gemini 暂未实现")
 }
 ```
+</details>
+
 
 **对照 Python**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（24 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 # Python ai_service.py（简化）
@@ -2060,6 +2454,8 @@ class AIService:
             )
             return resp.json()["choices"][0]["message"]["content"]
 ```
+</details>
+
 
 > **注意**：Go 的 `http.Client` 不支持自动超时重试，Python 的 `httpx` 也不支持。
 > 这里用 `defer resp.Body.Close()` 确保连接关闭（Go 新手最容易忘这行）。
@@ -2081,6 +2477,16 @@ class AIService:
 ```
 
 ### 8.2 实现
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （56 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/calibration/calibration_service.go
@@ -2140,8 +2546,20 @@ func (s *CalibrationService) RunCalibration(ctx context.Context, date time.Time)
     return nil
 }
 ```
+</details>
+
 
 **对照 Python**：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（28 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 # Python calibration_service.py
@@ -2173,6 +2591,8 @@ class CalibrationService:
             ))
         session.commit()
 ```
+</details>
+
 
 ---
 
@@ -2183,6 +2603,16 @@ class CalibrationService:
 **Python 原版**：[tasks/background_refresh.py](Python backend → tasks/background_refresh.py)
 
 ### 9.1 Go 实现后台任务
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （69 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/task/background.go
@@ -2255,6 +2685,8 @@ func isTradingDay(t time.Time) bool {
     return true
 }
 ```
+</details>
+
 
 ### 9.2 嵌入 main.go
 
@@ -2300,6 +2732,16 @@ AgentToken 的核心思路：
 3. 服务端取到 raw_token，SHA256 后去数据库查
 4. 查到的记录里有 scope（权限范围），检查当前路径是否允许
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （31 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // internal/middleware/auth.go 中补充 AgentToken 分支
 func handleAgentToken(c *gin.Context, authHeader string, agentTokenRepo repository.AgentTokenRepository) {
@@ -2333,6 +2775,8 @@ func sha256Hash(s string) string {
     return hex.EncodeToString(h[:])
 }
 ```
+</details>
+
 
 ---
 
@@ -2344,6 +2788,16 @@ func sha256Hash(s string) string {
 
 这是 Go 对比 Python 最容易出错的地方。Python SQLAlchemy 用 `db.commit()` 手动提交，
 GORM 用 `db.Transaction(func(tx *gorm.DB) error { ... })`：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （37 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // 在 repository 里提供带事务的方法
@@ -2384,6 +2838,8 @@ func (s *InviteService) ApplyInviteReward(ctx context.Context, inviterID, newUse
     })
 }
 ```
+</details>
+
 
 **对照 Python**：
 
@@ -2406,6 +2862,16 @@ if reward_count < MAX_INVITE_REWARD_TIMES:
 ## Step 12：静态文件 & SPA fallback
 
 **Python 原版**：[core/app_factory.py](Python backend → core/app_factory.py) 的后半部分
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （22 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/app/app.go 中追加
@@ -2431,6 +2897,8 @@ func New(cfg *config.Config) *gin.Engine {
     return r
 }
 ```
+</details>
+
 
 > **注意**：Gin 的 `NoRoute` 只匹配没注册的路径。如果有注册了 `GET /api/health`，那访问 `/api/health` 就不会走到 NoRoute。
 
@@ -2441,6 +2909,16 @@ func New(cfg *config.Config) *gin.Engine {
 **这步的核心**：对比 Python 原版响应，保证**字段名和大小写完全一致**。
 
 ### 验证脚本
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 bash  （23 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```bash
 # 1. 健康检查
@@ -2467,6 +2945,8 @@ curl http://localhost:8080/api/estimate/batch \
   -d '{"codes":["000001","110011"]}'
 # 对比 Python 格式之 {"data":[...],"truncated":false,"limit":50}
 ```
+</details>
+
 
 ### 字段名对齐检查清单
 
@@ -2563,6 +3043,16 @@ db.First(&user, 1)  // 一定要传指针
 
 ### 常用 Go 命令
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 bash  （16 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```bash
 # 运行
 go run cmd/server/main.go
@@ -2581,10 +3071,22 @@ go get github.com/xxx/xxx  # 安装一个新依赖
 # 代码检查
 go vet ./...    # 静态检查
 ```
+</details>
+
 
 ### 依赖安装清单
 
 随着项目推进，你需要跑这些 `go get`：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 bash  （19 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```bash
 # 框架
@@ -2607,6 +3109,8 @@ go get github.com/shopspring/decimal
 # 配置（读 .env）
 go get github.com/joho/godotenv
 ```
+</details>
+
 
 每次跑完 `go get`，`go.mod` 和 `go.sum` 会自动更新。
 

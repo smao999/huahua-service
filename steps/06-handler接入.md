@@ -55,6 +55,16 @@ async def api_search(key: str = ""):
 ```
 
 **Go akshare client** 先加基金搜索数据方法：
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （18 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```go
 // internal/service/akshare/basic_info.go
 package akshare
@@ -75,6 +85,8 @@ func (c *Client) SearchFunds(key string) []FundBasicInfoSearch {
     return nil
 }
 ```
+</details>
+
 
 **Go handler** 加方法：
 ```go
@@ -161,6 +173,16 @@ curl "http://localhost:8080/api/market/indices"
 
 **Python routers/agent_request.py**（AI Agent 发起的交易请求，App 端确认后执行）：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（16 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 @router.post("/agent/request")
 def create_agent_request(body, current_user, db):
@@ -179,6 +201,8 @@ def update_agent_request(request_id, body, current_user, db):
     # 更新状态：PROCESSED 或 DISMISSED
     return {"status": "ok"}
 ```
+</details>
+
 
 **Go router 注册**：
 ```go

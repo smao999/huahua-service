@@ -9,6 +9,16 @@
 
 **services/calibration_service.py**（夜估校准）：
 
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（61 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
+
 ```python
 class CalibrationService:
     """基金净值校准服务
@@ -72,8 +82,20 @@ class CalibrationService:
         
         session.commit()
 ```
+</details>
+
 
 ## 8.2 Go 实现
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （91 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/calibration/calibration_service.go
@@ -168,6 +190,8 @@ func (s *Service) calibrateOne(ctx context.Context, code, date string) error {
     return s.calRepo.Save(ctx, cal)
 }
 ```
+</details>
+
 
 **公式解释**：
 
@@ -187,6 +211,16 @@ alpha_new = alpha_old × 0.85 + error × 0.15
 ---
 
 ## 8.3 Calibration Repository
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （34 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/repository/calibration_repo.go
@@ -224,6 +258,8 @@ func (r *calibrationRepo) Save(ctx context.Context, cal *model.FundCalibration) 
     return r.db.WithContext(ctx).Save(cal).Error
 }
 ```
+</details>
+
 
 ---
 
@@ -243,6 +279,16 @@ func (r *calibrationRepo) Save(ctx context.Context, cal *model.FundCalibration) 
 夜估校准的核心依赖——用持仓数据估算当日净值。
 
 ### Python 源码
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 python（33 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```python
 # services/holdings_estimate.py
@@ -279,8 +325,20 @@ def build_holdings_estimate(holdings_json, market_prices):
         total_holdings_weight=total_value,
     )
 ```
+</details>
+
 
 ### Go 实现
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （28 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/holdings/estimate.go — 新建文件
@@ -312,6 +370,8 @@ func HasEnoughCoverage(covered, total float64) bool {
     return total > 0 && covered/total*100 >= 25
 }
 ```
+</details>
+
 
 ---
 
@@ -331,6 +391,16 @@ async def api_market_night_est(codes, current_user):
 ```
 
 **Go 简化实现**（依赖 holdings estimate + calibration params）：
+
+<details>
+<summary>
+
+┌════════════════════════════════════════════════┐
+│  📂 go    （32 行）                               │
+│  ─────────────────────────────────────────────  │
+│  👆 点击此处展开 / 收起                              │
+└════════════════════════════════════════════════┘
+</summary>
 
 ```go
 // internal/service/nightest/service.go — 新建文件
@@ -366,3 +436,5 @@ type Result struct {
     ChangePercent  float64 `json:"changePercent"`
 }
 ```
+</details>
+
