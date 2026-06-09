@@ -1,5 +1,10 @@
 package config
 
+import (
+	"os"
+	"strconv"
+)
+
 // 项目配置
 type Config struct {
 	// === 应用 ===
@@ -51,4 +56,66 @@ type MailConfig struct {
 	Username string
 	Password string
 	From     string
+}
+
+func Load() *Config {
+	return &Config{
+		Port:      getEnv("PORT", "8080"),
+		Mode:      getEnv("MODE", "dev"),
+		SecretKey: getEnv("SECRET_KEY", ""),
+		AdminUID:  getEnv("ADMIN_UID", ""),
+
+		// 数据库
+		DB: DatabaseConfig{
+			DSN:          getEnv("DATABASE_DSN", ""),
+			MaxOpenConns: getEnvInt("DATABASE_MAX_OPEN_CONNS", 20),
+			MaxIdleConns: getEnvInt("DATABASE_MAX_IDLE_CONNS", 10),
+		},
+
+		// redis
+		Redis: RedisConfig{
+			Addr:     getEnv("REDIS_ADDR", "localhost:6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getEnvInt("REDIS_DB", 0),
+		},
+
+		// 限流
+		GlobalRateLimitCalls:  getEnvInt("GLOBAL_RATE_LIMIT_CALLS", 1200),
+		GlobalRateLimitPeriod: getEnvInt("GLOBAL_RATE_LIMIT_PERIOD", 60),
+
+		// 邮件
+		Mail: MailConfig{
+			Host:     getEnv("MAIL_HOST", "localhost"),
+			Port:     getEnvInt("MAIL_PORT", 25),
+			Username: getEnv("MAIL_USERNAME", ""),
+			Password: getEnv("MAIL_PASSWORD", ""),
+			From:     getEnv("MAIL_FROM", ""),
+		},
+
+		// AI相关
+		OpenRouterKey:     getEnv("OPEN_ROUTER_KEY", ""),
+		OpenRouterBaseURL: getEnv("OPEN_ROUTER_BASE_URL", ""),
+		GeminiKey:         getEnv("GEMINI_KEY", ""),
+
+		DataDir:       getEnv("DATA_DIR", ""),
+		MaxUploadSize: int64(getEnvInt("MAX_UPLOAD_SIZE", 5<<20)), // 默认 5MB
+
+		TwelveDataKey: getEnv("TwelveDataKey", ""),
+	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if v := os.Getenv(key); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
+	}
+	return defaultValue
 }
