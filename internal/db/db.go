@@ -35,6 +35,8 @@ func InitGorm(cfg config.DatabaseConfig) {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 	GORM = db
 	log.Println("数据库已连接")
+
+	AutoMigrate()
 }
 
 func InitRedis(cfg config.RedisConfig) {

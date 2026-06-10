@@ -1,8 +1,11 @@
 package config
 
 import (
+	"log"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 // 项目配置
@@ -59,6 +62,9 @@ type MailConfig struct {
 }
 
 func Load() *Config {
+	if err := godotenv.Load(); err != nil {
+		log.Fatalln("未找到 .env 文件，使用系统环境变量")
+	}
 	return &Config{
 		Port:      getEnv("PORT", "8080"),
 		Mode:      getEnv("MODE", "dev"),

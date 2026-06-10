@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"huahua-service/internal/db"
+	"log"
 	"net/http"
 	"time"
 
@@ -23,19 +24,21 @@ func (h *HealthHandler) Ping(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		var result int
-		if err := db.GORM.WithContext(ctx).Raw("select 1").Scan(&result); err != nil {
+		tx := db.GORM.WithContext(ctx).Raw("select 1").Scan(&result)
+		if tx.Error != nil {
 			dbStatus = "error"
 		}
 	} else {
+		log.Printf(dbStatus)
 		dbStatus = "error"
 	}
 	components["db"] = dbStatus
 
 	redisStatus := "ok"
 	if db.Redis != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := db.Redis.Ping(ctx).Err(); err != nil {
+		ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel2()
+		if err := db.Redis.Ping(ctx2).Err(); err != nil {
 			redisStatus = "error"
 		}
 	} else {
