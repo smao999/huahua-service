@@ -17,4 +17,5 @@ func Register(r *gin.Engine, h *handler.Handlers) {
 	registerAgentRequest(api, h.AgentRequest)
 	registerJcti(api, h.Jcti)
 	registerPublic(api, h.Public)
+	registerAuth(api, h.a)
 }

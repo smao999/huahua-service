@@ -14,5 +14,5 @@ type LoginRequest struct {
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
-	UserId      string `json:"user_id"`
+	UserId      int64  `json:"user_id"`
 }
