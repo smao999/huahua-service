@@ -19,15 +19,18 @@ func AuthRequired(jwtCfg security.JWTConfig, userRepo repository.UserRepository)
 
 		if token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
 		}
 
 		claims, err := security.ParseToken(jwtCfg.Secret, token)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized，token 无效"})
+			return
 		}
 		user, err := userRepo.GetUserByUsername(c.Request.Context(), claims.Sub)
 		if err != nil || user == nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user not fund"})
+			return
 		}
 		c.Set("user", user)
 		c.Next()

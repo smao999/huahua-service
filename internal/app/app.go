@@ -1,8 +1,8 @@
 package app
 
 import (
+	"huahua-service/internal/bootstrap"
 	"huahua-service/internal/config"
-	"huahua-service/internal/handler"
 	"huahua-service/internal/middleware"
 	"huahua-service/internal/router"
 
@@ -16,8 +16,8 @@ func New(cfg *config.Config) *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestLogger())
 
-	h := handler.NewHandlers()
-	router.Register(r, h)
+	deps := bootstrap.Init(cfg)
+	router.Register(r, deps.Handlers, deps.Midware)
 
 	return r
 }
