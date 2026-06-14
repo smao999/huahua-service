@@ -11,10 +11,11 @@ import (
 // 项目配置
 type Config struct {
 	// === 应用 ===
-	Port      string // 监听端口，默认 "8080"
-	Mode      string // 运行模式："debug" 或 "release"
-	SecretKey string // JWT 签名密钥
-	AdminUID  string // 管理员 UID
+	Port                   string // 监听端口，默认 "8080"
+	Mode                   string // 运行模式："debug" 或 "release"
+	SecretKey              string // JWT 签名密钥
+	AdminUID               string // 管理员 UID
+	AccessTokenExpireHours int    // AccessToken 过期时间（小时），默认 168（7天）
 
 	// === 数据库 ===
 	DB    DatabaseConfig
@@ -66,10 +67,11 @@ func Load() *Config {
 		log.Fatalln("未找到 .env 文件，使用系统环境变量")
 	}
 	return &Config{
-		Port:      getEnv("PORT", "8080"),
-		Mode:      getEnv("MODE", "dev"),
-		SecretKey: getEnv("SECRET_KEY", ""),
-		AdminUID:  getEnv("ADMIN_UID", ""),
+		Port:                   getEnv("PORT", "8080"),
+		Mode:                   getEnv("MODE", "dev"),
+		SecretKey:              getEnv("SECRET_KEY", ""),
+		AdminUID:               getEnv("ADMIN_UID", ""),
+		AccessTokenExpireHours: getEnvInt("ACCESS_TOKEN_EXPIRE_HOURS", 168),
 
 		// 数据库
 		DB: DatabaseConfig{

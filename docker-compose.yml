@@ -1,4 +1,5 @@
 services:
+  # ---- 数据库 ----
   postgres:
     image: postgres:16-alpine
     container_name: huahua-postgres
@@ -22,29 +23,33 @@ services:
     volumes:
       - redis_data:/data
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: huahua-pgadmin
+  # ---- akshare gRPC 服务（Python） ----
+  akshare:
+    build:
+      context: .
+      dockerfile: akshare_server/Dockerfile
+    container_name: huahua-akshare
     restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - "9800:9800"
 
-  redis-insight:
-    image: redis/redisinsight:latest
-    container_name: huahua-redis-insight
+  # ---- Go 主服务 ----
+  app:
+    build: .
+    container_name: huahua-app
     restart: unless-stopped
     ports:
-      - "5540:5540"
-    volumes:
-      - redisinsight_data:/data
+      - "8871:8871"
+    environment:
+      AKSHARE_GRPC_ADDR: akshare:9800
+      # 容器内不能用 localhost，须用 compose 服务名
+      DATABASE_DSN: host=postgres user=postgres password=postgres dbname=huahua port=5432 sslmode=disable TimeZone=Asia/Shanghai
+      REDIS_ADDR: redis:6379
+    depends_on:
+      - postgres
+      - redis
+      - akshare
 
 volumes:
   postgres_data:
   redis_data:
-  pgadmin_data:
-  redisinsight_data:

@@ -3,6 +3,7 @@ package handler
 import (
 	"huahua-service/internal/schema"
 	"huahua-service/internal/service/auth"
+	"huahua-service/pkg/validation"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,7 @@ func NewAuthHandler(authService *auth.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req schema.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": validation.Translate(err, req)})
 		return
 	}
 
@@ -31,14 +32,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusOK, schema.TokenResponse{
 		AccessToken: token,
 		TokenType:   "Bearer",
-		UserId:      user.ID,
+		UId:         user.UID,
 	})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req schema.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": validation.Translate(err, req)})
 		return
 	}
 
@@ -50,6 +51,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, schema.TokenResponse{
 		AccessToken: token,
 		TokenType:   "Bearer",
-		UserId:      user.ID,
+		UId:         user.UID,
 	})
 }

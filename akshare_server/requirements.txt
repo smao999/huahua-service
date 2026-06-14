@@ -1,0 +1,4 @@
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+akshare>=1.15.0
+pandas>=2.0.0

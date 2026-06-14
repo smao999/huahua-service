@@ -1,0 +1,32 @@
+# 本地开发覆盖文件
+# 用法: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# 与生产 docker-compose.yml 的区别：
+# - 源码通过 volume 挂载，改代码无需重建镜像
+# - Go 使用 go run 启动，restart 时自动重编译（约 3-5 秒）
+# - Python 直接跑 server.py，restart 即生效
+
+services:
+  app:
+    build: !reset null
+    image: golang:1.25-alpine
+    working_dir: /app
+    entrypoint: go run ./cmd/server/
+    volumes:
+      - .:/app
+      - go_cache:/root/.cache/go-build
+      - go_mod:/go/pkg/mod
+
+  akshare:
+    volumes:
+      - ./akshare_server:/app
+      - ./akshare_proto/akshare.proto:/proto/akshare.proto:ro
+    # volume 挂载会覆盖镜像内构建时生成的 stub，启动前从 proto 重新生成
+    entrypoint: >
+      sh -c "cp /proto/akshare.proto /tmp/akshare.proto &&
+             python3 -m grpc_tools.protoc -I/tmp --python_out=/app --grpc_python_out=/app /tmp/akshare.proto &&
+             python3 server.py"
+
+volumes:
+  go_cache:
+  go_mod:

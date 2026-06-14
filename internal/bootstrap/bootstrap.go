@@ -1,16 +1,18 @@
 package bootstrap
 
 import (
+	"os"
 	"time"
 
 	"huahua-service/internal/config"
 	"huahua-service/internal/db"
 	"huahua-service/internal/handler"
 	"huahua-service/internal/middleware"
-	"huahua-service/internal/repository"
 	"huahua-service/internal/security"
 	"huahua-service/internal/service"
+	akshareSvc "huahua-service/internal/service/akshare"
 	"huahua-service/internal/service/auth"
+	fundSvc "huahua-service/internal/service/fund"
 )
 
 // Dependencies 所有依赖的容器
@@ -20,28 +22,26 @@ type Dependencies struct {
 }
 
 // Init 初始化所有依赖——这是整个项目唯一的"接线"位置
-// 所有 Repository → Service → Handler 的创建顺序在这里一目了然
 func Init(cfg *config.Config) *Dependencies {
 	// 基础配置
 	jwtCfg := security.JWTConfig{
 		Secret: cfg.SecretKey,
-		Expire: 7 * 24 * time.Hour,
+		Expire: time.Duration(cfg.AccessTokenExpireHours) * time.Hour,
 	}
-	// Repository
-	repos := repository.NewRepos(db.GORM)
 	// Service
 	svcs := &service.Services{
-		Auth: auth.NewAuthService(db.GORM, repos.User, jwtCfg),
-		// Fund: fund.NewFundService(repos.FundBasicInfo, repos.FundNav),
+		Auth:    auth.NewAuthService(db.GORM, jwtCfg),
+		Akshare: initAkshare(),
 	}
+	svcs.Fund = fundSvc.NewService(svcs.Akshare)
 	// Middleware
 	mw := &middleware.Middleware{
-		AuthRequired: middleware.AuthRequired(jwtCfg, repos.User),
+		AuthRequired: middleware.AuthRequired(jwtCfg, svcs.Auth),
 	}
 	// Handler
 	handlers := &handler.Handlers{
 		Health:       handler.NewHealthHandler(),
-		Fund:         handler.NewFundHandler(),
+		Fund:         handler.NewFundHandler(svcs.Fund),
 		Market:       handler.NewMarketHandler(),
 		User:         handler.NewUserHandler(),
 		Admin:        handler.NewAdminHandler(),
@@ -50,7 +50,20 @@ func Init(cfg *config.Config) *Dependencies {
 		Jcti:         handler.NewJctiHandler(),
 		Public:       handler.NewPublicHandler(),
 		Auth:         handler.NewAuthHandler(svcs.Auth),
-		// Fund:      handler.NewFundHandler(svcs.Fund),
 	}
 	return &Dependencies{Handlers: handlers, Midware: mw}
+}
+
+// initAkshare 连接 Python akshare gRPC 服务。
+// 读取 AKSHARE_GRPC_ADDR 环境变量，默认 localhost:9800。
+func initAkshare() *akshareSvc.Client {
+	addr := os.Getenv("AKSHARE_GRPC_ADDR")
+	if addr == "" {
+		addr = "localhost:9800"
+	}
+	client, err := akshareSvc.NewClient(addr)
+	if err != nil {
+		return nil
+	}
+	return client
 }

@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package akshare;
+
+option go_package = "huahua-service/akshare_proto/akshare";
+
+// 通用调用请求：akshare 函数名 + 关键字参数
+message CallRequest {
+  string fn = 1;                    // akshare 函数名，如 "fund_estimate"
+  map<string, string> kwargs = 2;   // 关键字参数，如 {"code":"000001"}
+}
+
+message CallResponse {
+  bool ok = 1;
+  string data_json = 2;   // 结果序列化为 JSON 字符串
+  string error = 3;
+}
+
+message BatchEstimateRequest {
+  repeated string codes = 1;
+}
+
+message FundEstimate {
+  string fund_code = 1;
+  string name = 2;
+  double estimate = 3;
+  double estimate_percent = 4;
+  double last_nav = 5;
+  string estimate_time = 6;
+}
+
+message BatchEstimateResponse {
+  repeated FundEstimate estimates = 1;
+}
+
+message NavRecord {
+  string date = 1;
+  double nav = 2;
+  double change = 3;
+}
+
+message HistoryRequest {
+  string code = 1;
+}
+
+message HistoryResponse {
+  repeated NavRecord records = 1;
+}
+
+// Akshare 数据服务
+service Akshare {
+  // 通用调用：可调用任意 akshare 函数，结果以 JSON 字符串返回
+  rpc Call(CallRequest) returns (CallResponse);
+
+  // 高频接口：基金实时估值（批量）
+  rpc BatchGetFundEstimates(BatchEstimateRequest) returns (BatchEstimateResponse);
+
+  // 高频接口：基金历史净值
+  rpc GetFundHistory(HistoryRequest) returns (HistoryResponse);
+}
